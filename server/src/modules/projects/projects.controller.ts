@@ -3,6 +3,7 @@ import { db } from '../../lib/db';
 import { badRequest, conflict, forbidden, notFound } from '../../lib/http';
 import { parsePublicId, toPublicId } from '../../lib/ids';
 import { assertOptionalString } from '../../lib/validation';
+import { assertProjectOwner } from '../../middleware/membership';
 
 const EMAIL_CHECK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -73,15 +74,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
     const id = parsePublicId(req.params.projectId, 'proj');
     if (id === null) throw notFound('Project not found');
 
-    const project = await db.project.findUnique({ where: { id } });
-    if (!project) throw notFound('Project not found');
-    if (project.ownerId !== userId) {
-      const membership = await db.projectMember.findUnique({
-        where: { projectId_userId: { projectId: id, userId } },
-      });
-      if (membership) throw forbidden('Only the project owner can edit it');
-      throw notFound('Project not found');
-    }
+    await assertProjectOwner(id, userId, 'Only the project owner can edit it', true);
 
     const data: { name?: string; description?: string | null } = {};
 
@@ -113,15 +106,7 @@ export async function remove(req: Request, res: Response, next: NextFunction): P
     const id = parsePublicId(req.params.projectId, 'proj');
     if (id === null) throw notFound('Project not found');
 
-    const project = await db.project.findUnique({ where: { id } });
-    if (!project) throw notFound('Project not found');
-    if (project.ownerId !== userId) {
-      const membership = await db.projectMember.findUnique({
-        where: { projectId_userId: { projectId: id, userId } },
-      });
-      if (membership) throw forbidden('Only the project owner can delete it');
-      throw notFound('Project not found');
-    }
+    await assertProjectOwner(id, userId, 'Only the project owner can delete it', true);
 
     await db.project.delete({ where: { id } });
     res.status(204).send();
@@ -136,9 +121,7 @@ export async function addMember(req: Request, res: Response, next: NextFunction)
     const id = parsePublicId(req.params.projectId, 'proj');
     if (id === null) throw notFound('Project not found');
 
-    const project = await db.project.findUnique({ where: { id } });
-    if (!project) throw notFound('Project not found');
-    if (project.ownerId !== userId) throw forbidden('Only the project owner can manage members');
+    await assertProjectOwner(id, userId, 'Only the project owner can manage members');
 
     const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
     if (!EMAIL_CHECK.test(email)) throw badRequest('email must be a valid address');
@@ -170,11 +153,11 @@ export async function removeMember(req: Request, res: Response, next: NextFuncti
     const memberId = parsePublicId(req.params.userId, 'user');
     if (id === null || memberId === null) throw notFound('Project not found');
 
-    const project = await db.project.findUnique({ where: { id } });
-    if (!project) throw notFound('Project not found');
-    if (project.ownerId !== actingUserId) {
-      throw forbidden('Only the project owner can manage members');
-    }
+    const project = await assertProjectOwner(
+      id,
+      actingUserId,
+      'Only the project owner can manage members',
+    );
     if (memberId === project.ownerId) {
       throw badRequest('The project owner cannot be removed from the project');
     }
