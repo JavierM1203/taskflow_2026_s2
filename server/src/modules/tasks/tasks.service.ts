@@ -79,25 +79,19 @@ export async function createTask(projectId: number, userId: number, body: Record
   return serializeTask(task);
 }
 
-/**
- * Actualiza una tarea: valida los campos recibidos, aplica las reglas de
- * autorización, resuelve la transición de estado, escribe el historial y
- * devuelve la tarea serializada.
- */
-export async function updateTask(taskId: number, userId: number, body: Record<string, unknown>) {
-  const task = await db.task.findUnique({ where: { id: taskId } });
-  if (!task) throw notFound('Task not found');
-
+/** Valida y arma los campos simples de la tarea (todo menos el status). */
+async function buildTaskUpdateData(
+  task: TaskRow,
+  body: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
   const data: Record<string, unknown> = {};
-  let nextStatus: Status | null = null;
 
   if (body.title !== undefined) {
     data.title = assertString(body.title, 'title', 3, 200);
   }
 
   if (body.description !== undefined) {
-    const description = assertOptionalString(body.description, 'description', 500);
-    data.description = description ?? null;
+    data.description = assertOptionalString(body.description, 'description', 500) ?? null;
   }
 
   if (body.priority !== undefined) {
@@ -117,44 +111,51 @@ export async function updateTask(taskId: number, userId: number, body: Record<st
       data.assigneeId = null;
     } else {
       const parsed = parsePublicId(body.assigneeId, 'user');
-      if (parsed === null) {
-        throw badRequest('assigneeId must be a valid user id');
-      } else {
-        const memberOfProject = await isMember(parsed, task.projectId);
-        if (!memberOfProject) {
-          throw badRequest('The assignee must be a member of the project');
-        } else {
-          data.assigneeId = parsed;
-        }
+      if (parsed === null) throw badRequest('assigneeId must be a valid user id');
+      if (!(await isMember(parsed, task.projectId))) {
+        throw badRequest('The assignee must be a member of the project');
       }
+      data.assigneeId = parsed;
     }
   }
 
+  return data;
+}
+
+/** Solo el asignado o un admin/owner del proyecto pueden cambiar el status, y solo si la transición es válida. */
+async function assertCanChangeStatus(task: TaskRow, userId: number, requested: Status): Promise<void> {
+  const isAssignee = task.assigneeId === userId;
+  if (!isAssignee) {
+    const membership = await db.projectMember.findUnique({
+      where: { projectId_userId: { projectId: task.projectId, userId } },
+    });
+    const isProjectAdmin = membership?.role === 'OWNER' || membership?.role === 'ADMIN';
+    if (!isProjectAdmin) {
+      throw forbidden('Only the assignee or a project admin can change the status');
+    }
+  }
+  assertTransition(task.status as Status, requested);
+}
+
+/**
+ * Actualiza una tarea: valida los campos recibidos, aplica las reglas de
+ * autorización, resuelve la transición de estado, escribe el historial y
+ * devuelve la tarea serializada.
+ */
+export async function updateTask(taskId: number, userId: number, body: Record<string, unknown>) {
+  const task = await db.task.findUnique({ where: { id: taskId } });
+  if (!task) throw notFound('Task not found');
+
+  const data = await buildTaskUpdateData(task, body);
+
+  let nextStatus: Status | null = null;
   if (body.status !== undefined) {
     const requested = assertStatus(body.status);
     if (requested !== task.status) {
-      const isAssignee = task.assigneeId === userId;
-      if (!isAssignee) {
-        const membership = await db.projectMember.findUnique({
-          where: { projectId_userId: { projectId: task.projectId, userId } },
-        });
-        if (!membership) {
-          throw forbidden('Only the assignee or a project admin can change the status');
-        } else if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') {
-          throw forbidden('Only the assignee or a project admin can change the status');
-        } else {
-          assertTransition(task.status as Status, requested);
-          nextStatus = requested;
-        }
-      } else {
-        assertTransition(task.status as Status, requested);
-        nextStatus = requested;
-      }
+      await assertCanChangeStatus(task, userId, requested);
+      nextStatus = requested;
+      data.status = nextStatus;
     }
-  }
-
-  if (nextStatus !== null) {
-    data.status = nextStatus;
   }
 
   if (Object.keys(data).length === 0) {
