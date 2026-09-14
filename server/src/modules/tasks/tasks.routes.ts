@@ -8,14 +8,14 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/:taskId', requireTaskProjectMember('taskId'), controller.getOne);
-router.get('/:taskId/history', requireTaskProjectMember('taskId'), controller.history);
+router.get('/:taskId', requireTaskProjectMember, controller.getOne);
+router.get('/:taskId/history', requireTaskProjectMember, controller.history);
 
 router.patch('/:taskId', controller.update);
 router.delete('/:taskId', controller.remove);
 
-router.post('/:taskId/tags', requireTaskProjectMember('taskId'), controller.addTag);
-router.delete('/:taskId/tags/:tagId', requireTaskProjectMember('taskId'), controller.removeTag);
+router.post('/:taskId/tags', requireTaskProjectMember, controller.addTag);
+router.delete('/:taskId/tags/:tagId', requireTaskProjectMember, controller.removeTag);
 
 router.use('/:taskId/comments', commentsRouter);
 
