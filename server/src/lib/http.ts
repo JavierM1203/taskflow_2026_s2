@@ -30,9 +30,11 @@ export class ApiError extends Error {
   }
 }
 
-export const badRequest = (m: string, d: string[] = []) => new ApiError('VALIDATION_ERROR', m, d);
-export const unauthorized = (m = 'Authentication required') => new ApiError('UNAUTHORIZED', m);
-export const forbidden = (m = 'You do not have access to this resource') => new ApiError('FORBIDDEN', m);
-export const notFound = (m = 'Resource not found') => new ApiError('NOT_FOUND', m);
-export const conflict = (m: string) => new ApiError('CONFLICT', m);
-export const invalidTransition = (m: string) => new ApiError('INVALID_TRANSITION', m);
+export const badRequest = (message: string, details: string[] = []) =>
+  new ApiError('VALIDATION_ERROR', message, details);
+export const unauthorized = (message = 'Authentication required') => new ApiError('UNAUTHORIZED', message);
+export const forbidden = (message = 'You do not have access to this resource') =>
+  new ApiError('FORBIDDEN', message);
+export const notFound = (message = 'Resource not found') => new ApiError('NOT_FOUND', message);
+export const conflict = (message: string) => new ApiError('CONFLICT', message);
+export const invalidTransition = (message: string) => new ApiError('INVALID_TRANSITION', message);
