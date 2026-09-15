@@ -7,7 +7,7 @@ import * as service from './comments.service';
 // Montado en /tasks/:taskId/comments
 const router = Router({ mergeParams: true });
 
-router.use(requireTaskProjectMember('taskId'));
+router.use(requireTaskProjectMember);
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
