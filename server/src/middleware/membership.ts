@@ -15,6 +15,22 @@ export async function isOwner(userId: number, projectId: number): Promise<boolea
   return project !== null && project.ownerId === userId;
 }
 
+export async function assertProjectOwner(
+  projectId: number,
+  userId: number,
+  message: string,
+  hideUnauthorized = false,
+) {
+  const project = await db.project.findUnique({ where: { id: projectId } });
+  if (!project) throw notFound('Project not found');
+  if (await isOwner(userId, projectId)) return project;
+
+  if (hideUnauthorized && !(await isMember(userId, projectId))) {
+    throw notFound('Project not found');
+  }
+  throw forbidden(message);
+}
+
 /**
  * Verifica que el usuario autenticado sea miembro vigente del proyecto
  * indicado en el parámetro de ruta :projectId.
