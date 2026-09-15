@@ -79,17 +79,8 @@ export async function createTask(projectId: number, userId: number, body: Record
   return serializeTask(task);
 }
 
-/**
- * Actualiza una tarea: valida los campos recibidos, aplica las reglas de
- * autorización, resuelve la transición de estado, escribe el historial y
- * devuelve la tarea serializada.
- */
-export async function updateTask(taskId: number, userId: number, body: Record<string, unknown>) {
-  const task = await db.task.findUnique({ where: { id: taskId } });
-  if (!task) throw notFound('Task not found');
-
+async function buildTaskUpdate(task: TaskRow, userId: number, body: Record<string, unknown>) {
   const data: Record<string, unknown> = {};
-  let nextStatus: Status | null = null;
 
   if (body.title !== undefined) {
     data.title = assertString(body.title, 'title', 3, 200);
@@ -130,49 +121,62 @@ export async function updateTask(taskId: number, userId: number, body: Record<st
     }
   }
 
-  if (body.status !== undefined) {
-    const requested = assertStatus(body.status);
-    if (requested !== task.status) {
-      const isAssignee = task.assigneeId === userId;
-      if (!isAssignee) {
-        const membership = await db.projectMember.findUnique({
-          where: { projectId_userId: { projectId: task.projectId, userId } },
-        });
-        if (!membership) {
-          throw forbidden('Only the assignee or a project admin can change the status');
-        } else if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') {
-          throw forbidden('Only the assignee or a project admin can change the status');
-        } else {
-          assertTransition(task.status as Status, requested);
-          nextStatus = requested;
-        }
-      } else {
-        assertTransition(task.status as Status, requested);
-        nextStatus = requested;
-      }
+  const nextStatus = await resolveStatusChange(task, userId, body.status);
+  if (nextStatus !== null) data.status = nextStatus;
+
+  return { data, nextStatus };
+}
+
+async function resolveStatusChange(
+  task: TaskRow,
+  userId: number,
+  rawStatus: unknown,
+): Promise<Status | null> {
+  if (rawStatus === undefined) return null;
+
+  const requested = assertStatus(rawStatus);
+  if (requested === task.status) return null;
+
+  const isAssignee = task.assigneeId === userId;
+  if (!isAssignee) {
+    const membership = await db.projectMember.findUnique({
+      where: { projectId_userId: { projectId: task.projectId, userId } },
+    });
+    if (!membership || (membership.role !== 'OWNER' && membership.role !== 'ADMIN')) {
+      throw forbidden('Only the assignee or a project admin can change the status');
     }
   }
 
-  if (nextStatus !== null) {
-    data.status = nextStatus;
-  }
+  assertTransition(task.status as Status, requested);
+  return requested;
+}
 
-  if (Object.keys(data).length === 0) {
-    return serializeTask(task);
-  }
+/**
+ * Actualiza una tarea y registra sus cambios de estado de forma atómica.
+ */
+export async function updateTask(taskId: number, userId: number, body: Record<string, unknown>) {
+  const task = await db.task.findUnique({ where: { id: taskId } });
+  if (!task) throw notFound('Task not found');
 
-  const updated = await db.task.update({ where: { id: taskId }, data });
+  const { data, nextStatus } = await buildTaskUpdate(task, userId, body);
+  if (Object.keys(data).length === 0) return serializeTask(task);
 
-  if (nextStatus !== null) {
-    await db.taskHistory.create({
-      data: {
-        taskId,
-        changedById: userId,
-        fromStatus: task.status,
-        toStatus: nextStatus,
-      },
-    });
-  }
+  const updated = await db.$transaction(async (transaction) => {
+    const result = await transaction.task.update({ where: { id: taskId }, data });
+
+    if (nextStatus !== null) {
+      await transaction.taskHistory.create({
+        data: {
+          taskId,
+          changedById: userId,
+          fromStatus: task.status,
+          toStatus: nextStatus,
+        },
+      });
+    }
+
+    return result;
+  });
 
   return serializeTask(updated);
 }
