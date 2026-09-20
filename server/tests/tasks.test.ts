@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { app, auth, createProject, registerUser } from './helpers';
+import { app, auth, createProject, createTask, registerUser } from './helpers';
 
 describe('Tareas', () => {
   it('crea una tarea en un proyecto', async () => {
@@ -228,4 +228,93 @@ describe('Tareas', () => {
     expect(res.body.error.message).toBe('You are not a member of this project');
   });
 
+});
+
+describe('Eliminar tarea', () => {
+  it('elimina una tarea propia del proyecto', async () => {
+    const { token } = await registerUser('task-delete-owner@test.com');
+    const project = await createProject(token, 'Proyecto de eliminación');
+    const task = await createTask(token, project.id, { title: 'Tarea a eliminar' });
+
+    const res = await request(app).delete(`/api/tasks/${task.id}`).set(auth(token));
+
+    expect(res.status).toBe(204);
+    expect(res.body).toEqual({});
+
+    const list = await request(app)
+      .get(`/api/projects/${project.id}/tasks`)
+      .set(auth(token));
+    expect(list.body.items.map((t: { id: string }) => t.id)).not.toContain(task.id);
+  });
+
+  it('al eliminar una tarea se eliminan sus comentarios asociados', async () => {
+    const { token } = await registerUser('task-delete-comments@test.com');
+    const project = await createProject(token, 'Proyecto con comentarios');
+    const task = await createTask(token, project.id, { title: 'Tarea comentada' });
+    await request(app)
+      .post(`/api/tasks/${task.id}/comments`)
+      .set(auth(token))
+      .send({ body: 'Un comentario' });
+
+    const del = await request(app).delete(`/api/tasks/${task.id}`).set(auth(token));
+    expect(del.status).toBe(204);
+
+    const comments = await request(app).get(`/api/tasks/${task.id}/comments`).set(auth(token));
+    expect(comments.status).toBe(404);
+  });
+
+  it('al eliminar una tarea se elimina su historial de estados', async () => {
+    const { token, id } = await registerUser('task-delete-history@test.com');
+    const project = await createProject(token, 'Proyecto con historial');
+    const task = await createTask(token, project.id, { title: 'Tarea con historial', assigneeId: id });
+    await request(app)
+      .patch(`/api/tasks/${task.id}`)
+      .set(auth(token))
+      .send({ status: 'IN_PROGRESS' });
+
+    const del = await request(app).delete(`/api/tasks/${task.id}`).set(auth(token));
+    expect(del.status).toBe(204);
+
+    const history = await request(app).get(`/api/tasks/${task.id}/history`).set(auth(token));
+    expect(history.status).toBe(404);
+  });
+
+  it('permite eliminar una tarea en estado DONE', async () => {
+    const { token, id } = await registerUser('task-delete-done@test.com');
+    const project = await createProject(token, 'Proyecto de estados finales');
+    const task = await createTask(token, project.id, { title: 'Tarea a completar', assigneeId: id });
+
+    await request(app).patch(`/api/tasks/${task.id}`).set(auth(token)).send({ status: 'IN_PROGRESS' });
+    await request(app).patch(`/api/tasks/${task.id}`).set(auth(token)).send({ status: 'DONE' });
+
+    const res = await request(app).delete(`/api/tasks/${task.id}`).set(auth(token));
+
+    expect(res.status).toBe(204);
+  });
+
+  it('rechaza eliminar una tarea inexistente', async () => {
+    const { token } = await registerUser('task-delete-missing@test.com');
+
+    const res = await request(app).delete('/api/tasks/task-9999').set(auth(token));
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.message).toBe('Task not found');
+  });
+
+  it('rechaza eliminar una tarea si el usuario no es miembro del proyecto', async () => {
+    const { token: ownerToken } = await registerUser('task-delete-owner2@test.com');
+    const { token: nonMemberToken } = await registerUser('task-delete-nonmember@test.com');
+    const project = await createProject(ownerToken, 'Proyecto privado de tareas');
+    const task = await createTask(ownerToken, project.id, { title: 'Tarea protegida' });
+
+    const res = await request(app).delete(`/api/tasks/${task.id}`).set(auth(nonMemberToken));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.body.error.message).toBe('You are not a member of this project');
+
+    const stillThere = await request(app).get(`/api/tasks/${task.id}`).set(auth(ownerToken));
+    expect(stillThere.status).toBe(200);
+  });
 });
