@@ -13,6 +13,16 @@ export class BoardPage {
     await this.page.getByTestId('task-create-submit').click();
   }
 
+  async createTaskWithDueDate(title: string, dueDate: string): Promise<void> {
+    await this.page.getByTestId('task-create-title-input').fill(title);
+    await this.page.getByTestId('task-create-duedate-input').fill(dueDate);
+    await this.page.getByTestId('task-create-submit').click();
+  }
+
+  column(status: string): Locator {
+    return this.page.getByTestId(`board-column-list-${status}`);
+  }
+
   taskCard(title: string): Locator {
     return this.page.getByTestId('task-card').filter({
       has: this.page.getByRole('link', { name: title, exact: true }),

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, test as base } from '@playwright/test';
 import { BoardPage } from './pages/BoardPage';
 import { LoginPage } from './pages/LoginPage';
+import { MembersPage } from './pages/MembersPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 
@@ -21,12 +22,14 @@ interface Fixtures {
   projectsPage: ProjectsPage;
   boardPage: BoardPage;
   taskDetailPage: TaskDetailPage;
+  membersPage: MembersPage;
   testUser: TestUser;
   testProject: TestProject;
 }
 
-const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:3000/api';
-const testPassword = 'Password1';
+export const apiUrl =
+  process.env.E2E_API_URL ?? `http://127.0.0.1:${process.env.E2E_API_PORT ?? 3000}/api`;
+export const testPassword = 'Password1';
 
 export const test = base.extend<Fixtures>({
   loginPage: async ({ page }, use) => {
@@ -43,6 +46,10 @@ export const test = base.extend<Fixtures>({
 
   taskDetailPage: async ({ page }, use) => {
     await use(new TaskDetailPage(page));
+  },
+
+  membersPage: async ({ page }, use) => {
+    await use(new MembersPage(page));
   },
 
   testUser: async ({ request, page, loginPage }, use) => {
