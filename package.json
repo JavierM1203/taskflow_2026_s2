@@ -19,13 +19,15 @@
     "postinstall": "npm --prefix server install && npm --prefix client install"
   },
   "devDependencies": {
+    "@pact-foundation/pact": "^17.1.4",
     "@playwright/test": "^1.64.0",
+    "@types/node": "^26.6.5",
     "concurrently": "9.1.0"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "@types/node": "^26.6.5"
+    "vitest": "^5.0.5"
   }
 }
