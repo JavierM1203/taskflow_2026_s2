@@ -18,6 +18,7 @@
     "postinstall": "npm --prefix server install && npm --prefix client install"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "concurrently": "9.1.0"
   },
   "engines": {
