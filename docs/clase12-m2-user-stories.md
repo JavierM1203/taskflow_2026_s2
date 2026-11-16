@@ -13,12 +13,3 @@ Base de la US de Seguridad: observación de headers de `docs/clase12-m2-reporte.
 | **CA-02** | Con `curl -sI -H "Origin: https://evil.example" http://localhost:3000/api/health` la respuesta **no** incluye `Access-Control-Allow-Origin: https://evil.example` (CORS rechaza el origen no permitido), mientras que con `curl -sI -H "Origin: http://localhost:5173" http://localhost:3000/api/health` la respuesta sí incluye `Access-Control-Allow-Origin: http://localhost:5173` |
 | **CA-03** | Existe un test en `server/tests` (Jest + supertest) que hace un request a `GET /api/health` y falla si falta `X-Content-Type-Options`, si falta `X-Frame-Options`, si falta `Content-Security-Policy`, si aparece el header `X-Powered-By`, o si `Access-Control-Allow-Origin` se refleja para un `Origin` arbitrario no incluido en la whitelist; ese test corre dentro de `npm test` y queda en verde |
 | **CA-04** | Con `NODE_ENV=production`, la respuesta de `GET /api/health` incluye `Strict-Transport-Security` con `max-age` de al menos `15552000`; con `NODE_ENV` en desarrollo (valor distinto de `production`), la respuesta **no** incluye ese header |
-
-| **US de Accesibilidad — Hallazgo más grave** | |
-|---|---|
-| **Como** | [PENDIENTE: hallazgo ACC del equipo] |
-| **Quiero** | [PENDIENTE: hallazgo ACC del equipo] |
-| **Para** | [PENDIENTE: hallazgo ACC del equipo] |
-| **CA-01** | [PENDIENTE: hallazgo ACC del equipo] |
-| **CA-02** | [PENDIENTE: hallazgo ACC del equipo] |
-| **CA-03** | [PENDIENTE: hallazgo ACC del equipo] |
