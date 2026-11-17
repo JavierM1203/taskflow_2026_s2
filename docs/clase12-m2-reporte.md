@@ -56,7 +56,7 @@ Se realizaron las siguientes pruebas y no se encontraron problemas de seguridad:
 | **Qué parte del código lo explica** | Función *authenticate* en archivo *middleware/auth.ts* de server |
 
 
-## Hallazgos de accesibilidad
+## Hallazgos de accesibilidad (Axe-core)
 
 No se han encontrado vulnerabilidades o bug mediante el test con axe-core
 
@@ -65,7 +65,22 @@ No se han encontrado vulnerabilidades o bug mediante el test con axe-core
 
 ![Salida de los test de a11y.spec](image-1.png)
 
-Debido a que no hubo hallazgo a la vista se uso el comando `npx playwright test a11y --project=chromium --reporter=html` para guardar el reporte. Se puede usar el comando `npx playwright show-report` para ver el html del reporte
+Debido a que no hubo hallazgo a la vista se uso el comando `npx playwright test a11y --project=chromium --reporter=htm` para guardar el reporte. Se puede usar el comando `npx playwright show-report` para ver el html del reporte
+
+### Hallazgo de accesibilidad (revisión manual)
+
+axe-core no detecta este problema porque un título presente pero no descriptivo no viola ninguna de las reglas automáticas.
+
+| | |
+|---|---|
+| *ID*| ACC-01 |
+| *SC WCAG 2.1* | 2.4.2 Page Titled |
+| *Nivel* | A |
+| *Principio POUR* | Operable |
+| *Cómo se detectó* | Revisión manual |
+| *Vista afectada* | Todas (Login, Proyectos, Detalle de proyecto, Miembros y Detalle de tarea) |
+| *Descripción del fallo* | La aplicación es una SPA con un único `<title>TaskFlow</title>` en `client/index.html`, y ninguna página lo actualiza (no hay `document.title` en `client/src`). Al navegar entre vistas, la pestaña del navegador siempre dice «TaskFlow», por lo que un usuario de lector de pantalla, o con varias pestañas abiertas, no puede saber en qué pantalla está. |
+| *Fix propuesto* | Actualizar `document.title` en cada página con un título descriptivo, por ejemplo «Ingresar — TaskFlow», «Proyectos — TaskFlow» o «\<nombre del proyecto\> — TaskFlow», y verificarlo con un test de Playwright (`await expect(page).toHaveTitle(...)`). |
 
 ## OWASP ZAP
 
