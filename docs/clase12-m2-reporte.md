@@ -65,7 +65,7 @@ No se han encontrado vulnerabilidades o bug mediante el test con axe-core
 
 ![Salida de los test de a11y.spec](image-1.png)
 
-Debido a que no hubo hallazgo a la vista se uso el comando `npx playwright test a11y --project=chromium --reporter=htm` para guardar el reporte. Se puede usar el comando `npx playwright show-report` para ver el html del reporte
+Debido a que no hubo hallazgo a la vista se uso el comando `npx playwright test a11y --project=chromium --reporter=html` para guardar el reporte. Se puede usar el comando `npx playwright show-report` para ver el html del reporte
 
 ## OWASP ZAP
 
@@ -85,3 +85,17 @@ El reporte completo está en el html `zap-5173.html`
 |4|	El servidor divulga información mediante X-Powered-By|	Bajo|	1|	/api/health|	497 / 13|	10037|	Suprimir el header. Evidencia: x-powered-by: Express|
 |5|	Falta encabezado X-Content-Type-Options|	Bajo|	Systemic|	/, /@vite/client, /robots.txt, /src/main.tsx|	693 / 15|	10021|	Enviar X-Content-Type-Options: nosniff|
 |6|	Aplicación Web Moderna|	Informativo|	5|	/, /@vite, /robots.txt, /sitemap.xml, /src|	n/a|	10109|	Ninguna: ZAP solo avisa que es una SPA|
+
+## Hallazgos de seguridad: severidad CVSS 3.1
+
+Evidencia: tabla de headers (curl contra la API) y reporte `zap-5173.html` (X-Powered-By).
+Rangos de severidad: LOW 0.1–3.9 · MEDIUM 4.0–6.9 · HIGH 7.0–8.9 · CRITICAL 9.0–10.
+
+| ID | Hallazgo | Severidad | CVSS 3.1 | Vector | Remediación |
+|---|---|---|---|---|---|
+| SEC-01 | CORS abierto (`Access-Control-Allow-Origin: *`) | MEDIUM | 4.3 | [AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N) | `cors({ origin: <dominio del frontend> })` |
+| SEC-02 | Falta `X-Frame-Options` (clickjacking) | MEDIUM | 4.3 | [AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:L/A:N](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:L/A:N) | `helmet()` o `X-Frame-Options: SAMEORIGIN` |
+| SEC-03 | Falta `Content-Security-Policy` | MEDIUM | 4.2 | [AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N) | `helmet()` con una CSP restrictiva |
+| SEC-04 | Falta `Strict-Transport-Security` | MEDIUM | 4.2 | [AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N) | HSTS al desplegar con HTTPS |
+| SEC-05 | `X-Powered-By: Express` expuesto | LOW | 3.7 | [AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N) | `app.disable('x-powered-by')` o `helmet()` |
+| SEC-06 | Falta `X-Content-Type-Options` | LOW | 3.1 | [AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N) | `helmet()` o `nosniff` |
