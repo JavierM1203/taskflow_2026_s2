@@ -21,12 +21,10 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.0",
+    "@types/node": "^26.6.6",
     "concurrently": "9.1.0"
   },
   "engines": {
     "node": ">=20"
-  },
-  "dependencies": {
-    "@types/node": "^26.6.5"
   }
 }
