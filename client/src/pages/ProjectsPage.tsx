@@ -8,6 +8,10 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  useEffect(() => {
+    document.title = 'Proyectos | TaskFlow';
+  }, []);
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState<string | null>(null);

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -19,6 +19,13 @@ export default function MembersPage() {
   const { user } = useAuth();
   const { project, loading, error } = useProject(projectId);
   const { members, addMember, removeMember } = useMembers(project);
+
+  useEffect(() => {
+    document.title =
+      project && project.id === projectId
+        ? `Miembros de ${project.name} | TaskFlow`
+        : 'Miembros | TaskFlow';
+  }, [project, projectId]);
 
   const [email, setEmail] = useState('');
   const [formError, setFormError] = useState<string | null>(null);

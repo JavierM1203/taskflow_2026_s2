@@ -46,6 +46,13 @@ export default function TaskDetailPage() {
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
 
+  useEffect(() => {
+    document.title =
+      !loading && !loadError && task && task.id === taskId
+        ? `${task.title} | TaskFlow`
+        : 'Tarea | TaskFlow';
+  }, [loading, loadError, task, taskId]);
+
   const syncForm = useCallback((t: Task) => {
     setTitle(t.title);
     setDescription(t.description ?? '');
