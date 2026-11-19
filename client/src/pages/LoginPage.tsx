@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ApiError } from '../lib/api';
@@ -15,6 +15,10 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = `${mode === 'login' ? 'Ingresar' : 'Crear cuenta'} | TaskFlow`;
+  }, [mode]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

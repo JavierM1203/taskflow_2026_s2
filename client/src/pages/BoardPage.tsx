@@ -19,6 +19,13 @@ export default function BoardPage() {
   const { project, loading: projectLoading, error: projectError } = useProject(projectId);
   const { members } = useMembers(project);
 
+  useEffect(() => {
+    document.title =
+      project && project.id === projectId
+        ? `Tablero de ${project.name} | TaskFlow`
+        : 'Tablero | TaskFlow';
+  }, [project, projectId]);
+
   const [draftFilters, setDraftFilters] = useState<Filters>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
 
