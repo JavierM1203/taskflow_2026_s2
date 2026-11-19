@@ -5,5 +5,7 @@ coverage/
 *.db-journal
 .env
 server/tests/.tmp/
+client/e2e/test-results/
+playwright-report/
 .DS_Store
 client/e2e/test-results

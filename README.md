@@ -80,6 +80,17 @@ El comando `db:setup` carga datos de ejemplo. Los tres usuarios comparten la con
 | `npm run db:reset` | Borra la base y la vuelve a crear desde cero |
 | `npm test` | Corre la suite de tests |
 | `npm run test:coverage` | Corre la suite con reporte de cobertura |
+| `npm run test:e2e` | Corre los tests end-to-end con Playwright |
+
+### Tests end-to-end
+
+Los tests E2E usan Playwright con Chromium. Después de instalar las dependencias,
+instalá el navegador una vez con `npx playwright install chromium` y corré
+`npm run test:e2e`. Playwright prepara una base SQLite aislada y levanta la API
+y el frontend automáticamente, sin modificar la base de desarrollo; la base E2E
+se recrea vacía en cada corrida. Los
+escenarios están en `client/e2e/`, con Page Objects y fixtures para reutilizar la
+preparación de usuarios y proyectos.
 
 ## Frontend
 
