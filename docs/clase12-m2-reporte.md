@@ -12,13 +12,14 @@
 | `Access-Control-Allow-Origin` | Sí | Si vale `*`, cualquier sitio web puede llamar a la API desde un navegador |
 
 ### Evidencia
+
 ![Paso 3.1 Headers del endpoint health](3_headers_health.png)
 
 ![Paso 3.2 Headers de un endpoint protegido](3_headers_projects.png)
 
 ## Análisis de dependencias
 
-El comando `npm audit` arrojó una sola vulnerabilidad.
+`npm audit` ejecutado en la raíz del repo:
 
 | | |
 |---|---|
@@ -29,15 +30,52 @@ El comando `npm audit` arrojó una sola vulnerabilidad.
 | **¿Tiene arreglo disponible?**	| Sí. npm audit indica que existe una solución mediante npm audit fix. |
 | **¿Es un cambio breaking?** |	No se indica que sea necesario un cambio incompatible. npm audit fix intenta resolver las vulnerabilidades mediante actualizaciones compatibles con las restricciones de versiones existentes. |
 
+`npm audit` ejecutado en server:
+
+| **Aspecto** | **Detalle** |
+|---|---|
+| **Paquete** | `body-parser` (dependencia transitiva de `express`) |
+| **Severidad** | HIGH |
+| **Tipo de dependencia** | Dependencia de producción, transitiva de `express`. |
+| **Problema** | Se identifican vulnerabilidades que podrían permitir ataques de Denial of Service (DoS): una relacionada con la desactivación inadvertida de la validación del límite de tamaño de solicitudes mediante valores inválidos, y otra mediante bytes adicionales al final de un cuerpo de solicitud comprimido. Además, `body-parser` depende de versiones vulnerables de `qs`. |
+| **¿Va a producción?** | Sí, ya que `body-parser` forma parte de `express`, que es una dependencia de la aplicación. |
+| **¿Tiene arreglo disponible?** | Sí. `npm audit` indica que existe una solución mediante `npm audit fix --force`, que instalaría `express@4.22.3`. |
+| **¿Es un cambio breaking?** | Potencialmente. La solución indicada requiere `npm audit fix --force`, que instala `express@4.22.3`, fuera del rango de versiones declarado actualmente. Por lo tanto, podría implicar un cambio incompatible con las restricciones existentes y requiere verificar compatibilidad. |
+
+`npm audit` ejecutado en client:
+
+| **Aspecto** | **Detalle** |
+|---|---|
+| **Paquete** | `@remix-run/router` (dependencia transitiva de `react-router` y `react-router-dom`) |
+| **Severidad** | HIGH |
+| **Tipo de dependencia** | Dependencia de producción, transitiva de `react-router-dom`. |
+| **Problema** | Se identifican vulnerabilidades de seguridad relacionadas con redirecciones abiertas (Open Redirect), que podrían permitir redirigir a usuarios a sitios externos mediante URLs que comienzan con `//`. Además, se reporta una vulnerabilidad de XSS asociada a redirecciones abiertas. |
+| **¿Va a producción?** | Sí, ya que `@remix-run/router` forma parte de `react-router` y `react-router-dom`, utilizados por la aplicación. |
+| **¿Tiene arreglo disponible?** | Sí. `npm audit` indica que existe una solución mediante `npm audit fix --force`, que instalaría `react-router-dom@6.30.6`. |
+| **¿Es un cambio breaking?** | Potencialmente. La solución indicada requiere `npm audit fix --force`, que instala `react-router-dom@6.30.6`, fuera del rango de versiones declarado actualmente. Por lo tanto, podría implicar un cambio incompatible con las restricciones existentes y requiere verificar compatibilidad. |
+
+
 ## Hallazgos de seguridad
 
-Se realizaron las siguientes pruebas y no se encontraron problemas de seguridad:
+| | |
+|---|---|
+| **ID** | SEC-01 |
+| **Título** | Inyección SQL en buscador de tareas |
+| **Severidad** | CRITICAL - CVSS: 9.0 |
+| **Descripción** | El endpoint `api/tasks?search` permite buscar tareas que no pertenecen al usuario logueado al realizar una inyección SQL al ingresar valor `x') > 0) OR 1=1 --` en el parametro `search`. |
+| **Pasos de reproducción** | 1. Loguearse en el endpoint `api/auth/login` con credenciales válidas y obtener el token. <br> 2. Realizar petición `GET` a endpoint `api/tasks?search` con el token del paso anterior e ingresar el valor `x') > 0) OR 1=1 --` en el parametro `search`. <br> 3. Se muestran las tareas de proyectos que no pertenecen al usuario. | 
+| **Impacto** | ALTO |
+| **Remediación propuesta** | Reemplazar el uso de `$queryRawUnsafe` por consultas SQL parametrizadas mediante `$queryRaw`, evitando la concatenación directa de entradas del usuario. De esta forma, el parámetro `search` será tratado como dato y no como código SQL, previniendo ataques de inyección SQL. Mantener además el filtrado por `projectId` y validar los parámetros recibidos. |
 
-- Acceder a proyecto con token de usuario que no es miembro del proyecto
-- Inyección SQL en login y buscador de tareas
-- XSS almacenado al crear tarea
-- Acceso con token sin firma.
-
+| | |
+|---|---|
+| **ID** | SEC-02 |
+| **Título** | Se permite editar y borrar tarea de proyecto que no pertenece al usuario |
+| **Severidad** | CRITICAL - CVSS: 10.0 |
+| **Descripción** | El endpoint `api/tasks/:taskId` permite realizar peticiones `PATCH` y `DELETE` para editar y borrar tareas que no pertenecen al usuario. |
+| **Pasos de reproducción** | 1. Loguearse en el endpoint `api/auth/login` con credenciales válidas y obtener el token. <br> 2. Realizar petición `PATCH` y `DELETE` a endpoint `api/tasks/:taskId` con el token del paso anterior e ingresar `taskId` de una tarea de un proyecto que no pertenezca al usuario. <br> 3. Se permite editar o borrar la tarea a pesar de que el usuario no es miembro del proyecto. | 
+| **Impacto** | ALTO |
+| **Remediación propuesta** | Utilizar función `requireTaskProjectMember` en funciones `update` y `remove` de `task.controller.ts` para validar que el usuario es miembro del proyecto antes de realizar las acciones. |
 
 ## Control de seguridad verificado
 
