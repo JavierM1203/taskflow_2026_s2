@@ -22,7 +22,7 @@ for (const { label, timezoneId } of timezones) {
 
       await boardPage.createTaskWithDueDate(taskTitle, '2026-09-15');
       const taskCard = boardPage.taskCard(taskTitle);
-      await expect(taskCard.getByTestId('task-card-duedate')).toHaveText('2026-09-15');
+      await expect(taskCard.dueDate()).toHaveText('2026-09-15');
 
       await boardPage.openTask(taskTitle);
       await expect(page.getByTestId('task-duedate-value')).toHaveText('2026-09-15');

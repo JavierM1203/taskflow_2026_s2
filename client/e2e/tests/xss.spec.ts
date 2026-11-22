@@ -19,8 +19,8 @@ test('el HTML en títulos y comentarios se muestra como texto y no se ejecuta', 
   await boardPage.gotoProject(testProject.id);
   await boardPage.createTask(taskTitle);
   const taskCard = boardPage.taskCard(taskTitle);
-  await expect(taskCard.getByTestId('task-card-title')).toHaveText(taskTitle);
-  await expect(taskCard.locator('img')).toHaveCount(0);
+  await expect(taskCard.title()).toHaveText(taskTitle);
+  await expect(taskCard.images()).toHaveCount(0);
 
   await boardPage.openTask(taskTitle);
   await expect(page.getByTestId('task-title-input')).toHaveValue(taskTitle);

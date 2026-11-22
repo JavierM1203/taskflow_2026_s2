@@ -32,7 +32,7 @@ Se reduce la duplicación de código y se facilita la preparación de datos para
 
 ## ADR-003: No utilizar Component Object Model
 
-**Status:** Rechazado
+**Status:** Reemplazado por ADR-005
 
 **Contexto:**  
 La estructura actual del proyecto no cuenta con componentes independientes extraídos de las páginas.
@@ -66,3 +66,18 @@ No utilizar el patrón Screenplay.
 
 **Consecuencias:**  
 Se mantiene una estructura de pruebas más simple, evitando complejidad innecesaria.
+
+---
+
+## ADR-005: Utilizar Component Object Model
+
+**Status:** Aceptado (reemplaza a ADR-003)
+
+**Contexto:**  
+El ADR-003 había rechazado usar Component Object Model, aceptando como costo la duplicación de selectores y el acoplamiento que esa misma decisión describía. Ese costo se dio en la práctica: `BoardPage.changeTaskStatus` y `BoardPage.openTask` repetían `taskCard(title).getByTestId(...)` para cada acción sobre una tarjeta del tablero, y cualquier cambio de testid obligaba a tocar cada método que la usara.
+
+**Decisión:**  
+Usar Component Object Model para los elementos de UI que se repiten. Se extrajo `TaskCard` (`client/e2e/components/TaskCard.ts`): recibe un `Locator` en el constructor y expone métodos con nombre por cada campo de la tarjeta (`title()`, `priority()`, `status()`, `assignee()`, `dueDate()`), en lugar de un `getByTestId()`/`locator()` genéricos. `BoardPage.taskCard()` devuelve una instancia de `TaskCard`, y los tests leen y operan la tarjeta a través de esos métodos.
+
+**Consecuencias:**  
+Si cambia el testid de un campo de la tarjeta, se actualiza un solo lugar (`TaskCard`), no cada Page Object o spec que la use — el costo que describía el ADR-003 queda resuelto. A cambio, cada campo nuevo de la tarjeta necesita agregar su método correspondiente en `TaskCard` en vez de leerlo ad hoc con `getByTestId`.

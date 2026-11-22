@@ -25,9 +25,7 @@ test('el owner asigna una tarea a un miembro del proyecto (US-14)', async ({
   await expect(page.getByTestId('task-assignee-select')).toHaveValue(member.id);
 
   await boardPage.gotoProject(testProject.id);
-  await expect(boardPage.taskCard(taskTitle).getByTestId('task-card-assignee')).toHaveText(
-    member.email,
-  );
+  await expect(boardPage.taskCard(taskTitle).assignee()).toHaveText(member.email);
 });
 
 test('el owner desasigna una tarea que tenía un responsable (US-14)', async ({
@@ -54,7 +52,5 @@ test('el owner desasigna una tarea que tenía un responsable (US-14)', async ({
   await expect(page.getByTestId('task-assignee-select')).toHaveValue('');
 
   await boardPage.gotoProject(testProject.id);
-  await expect(boardPage.taskCard(taskTitle).getByTestId('task-card-assignee')).toHaveText(
-    'Sin asignar',
-  );
+  await expect(boardPage.taskCard(taskTitle).assignee()).toHaveText('Sin asignar');
 });

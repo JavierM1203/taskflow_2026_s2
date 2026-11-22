@@ -97,16 +97,12 @@ test('el owner asigna una tarea, el asignado la avanza y al quitarlo queda sin a
   await expect(ownerSession.page.getByTestId('task-current-status')).toHaveText('TODO');
 
   await ownerBoard.gotoProject(project.id);
-  await expect(ownerBoard.taskCard(taskTitle).getByTestId('task-card-assignee')).toHaveText(
-    member.email,
-  );
+  await expect(ownerBoard.taskCard(taskTitle).assignee()).toHaveText(member.email);
 
   const memberSession = await openSession(browser, member);
   const memberBoard = new BoardPage(memberSession.page);
   await memberBoard.gotoProject(project.id);
-  await expect(memberBoard.taskCard(taskTitle).getByTestId('task-card-assignee')).toHaveText(
-    member.email,
-  );
+  await expect(memberBoard.taskCard(taskTitle).assignee()).toHaveText(member.email);
   await memberBoard.changeTaskStatus(taskTitle, 'IN_PROGRESS');
   await expect(memberBoard.column('IN_PROGRESS').getByText(taskTitle, { exact: true })).toBeVisible();
 
@@ -121,9 +117,7 @@ test('el owner asigna una tarea, el asignado la avanza y al quitarlo queda sin a
   await expect(ownerMembers.member(member.email)).toHaveCount(0);
 
   await ownerBoard.gotoProject(project.id);
-  await expect
-    .soft(ownerBoard.taskCard(taskTitle).getByTestId('task-card-assignee'))
-    .toHaveText('Sin asignar');
+  await expect.soft(ownerBoard.taskCard(taskTitle).assignee()).toHaveText('Sin asignar');
 
   await memberSession.page.reload();
   await expect(memberSession.page.getByTestId('board-page')).toHaveCount(0);
