@@ -47,10 +47,10 @@ test('permite crear una tarea, moverla de estado y comentarla', async ({
   await boardPage.createTask(taskTitle, 'HIGH');
   const taskCard = boardPage.taskCard(taskTitle);
   await expect(taskCard.root).toBeVisible();
-  await expect(taskCard.getByTestId('task-card-priority')).toHaveText('HIGH');
+  await expect(taskCard.priority()).toHaveText('HIGH');
 
   await boardPage.changeTaskStatus(taskTitle, 'IN_PROGRESS');
-  await expect(taskCard.getByTestId('task-card-status-select')).toHaveValue('IN_PROGRESS');
+  await expect(taskCard.status()).toHaveValue('IN_PROGRESS');
 
   await boardPage.openTask(taskTitle);
   await expect(page.getByTestId('task-detail-page')).toBeVisible();

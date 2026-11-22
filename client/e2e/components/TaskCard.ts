@@ -13,19 +13,36 @@ export class TaskCard {
     return this.card;
   }
 
-  getByTestId(testId: string): Locator {
-    return this.card.getByTestId(testId);
+  title(): Locator {
+    return this.card.getByTestId('task-card-title');
   }
 
-  locator(selector: string): Locator {
-    return this.card.locator(selector);
+  priority(): Locator {
+    return this.card.getByTestId('task-card-priority');
+  }
+
+  status(): Locator {
+    return this.card.getByTestId('task-card-status-select');
+  }
+
+  assignee(): Locator {
+    return this.card.getByTestId('task-card-assignee');
+  }
+
+  dueDate(): Locator {
+    return this.card.getByTestId('task-card-duedate');
+  }
+
+  /** Imágenes dentro de la tarjeta; debe ser 0 siempre (chequeo de XSS almacenado). */
+  images(): Locator {
+    return this.card.locator('img');
   }
 
   async open(): Promise<void> {
-    await this.getByTestId('task-card-title').click();
+    await this.title().click();
   }
 
   async changeStatus(status: string): Promise<void> {
-    await this.getByTestId('task-card-status-select').selectOption(status);
+    await this.status().selectOption(status);
   }
 }

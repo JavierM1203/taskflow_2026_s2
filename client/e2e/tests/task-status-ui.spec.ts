@@ -15,7 +15,7 @@ test('TODO → DONE se rechaza y el tablero sigue mostrando la tarea en TODO (US
   await boardPage.changeTaskStatus(taskTitle, 'DONE');
 
   await expect(page.getByTestId('error-message')).toBeVisible();
-  await expect(taskCard.getByTestId('task-card-status-select')).toHaveValue('TODO');
+  await expect(taskCard.status()).toHaveValue('TODO');
   await expect(boardPage.column('TODO').getByText(taskTitle, { exact: true })).toBeVisible();
 
   await page.reload();
@@ -34,13 +34,13 @@ test('una tarea DONE no se puede reabrir desde el tablero ni desde el detalle (U
   const taskCard = boardPage.taskCard(taskTitle);
 
   await boardPage.changeTaskStatus(taskTitle, 'IN_PROGRESS');
-  await expect(taskCard.getByTestId('task-card-status-select')).toHaveValue('IN_PROGRESS');
+  await expect(taskCard.status()).toHaveValue('IN_PROGRESS');
   await boardPage.changeTaskStatus(taskTitle, 'DONE');
-  await expect(taskCard.getByTestId('task-card-status-select')).toHaveValue('DONE');
+  await expect(taskCard.status()).toHaveValue('DONE');
 
   await boardPage.changeTaskStatus(taskTitle, 'TODO');
   await expect(page.getByTestId('error-message')).toBeVisible();
-  await expect(taskCard.getByTestId('task-card-status-select')).toHaveValue('DONE');
+  await expect(taskCard.status()).toHaveValue('DONE');
 
   await boardPage.openTask(taskTitle);
   await expect(page.getByTestId('task-current-status')).toHaveText('DONE');
